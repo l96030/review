@@ -1,0 +1,898 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>商品评价文案生成器</title>
+<meta name="description" content="输入商品标题和关键词，一键生成像真人写的买家评价。本地引擎离线可用，可选接入 DeepSeek / 硅基流动。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%235b5bd6'/%3E%3Ctext y='72' x='50' font-size='54' text-anchor='middle' fill='white'%3E%E2%9C%A6%3C/text%3E%3C/svg%3E">
+<style>
+  :root{
+    --bg:#f5f6fa;
+    --card:#ffffff;
+    --line:#e6e8f0;
+    --text:#1a1c2b;
+    --muted:#7b7f95;
+    --brand:#5b5bd6;
+    --brand2:#8b5cf6;
+    --ok:#12b76a;
+    --danger:#e5484d;
+    --shadow:0 1px 2px rgba(20,20,50,.04), 0 10px 28px rgba(20,20,50,.06);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;background:var(--bg);color:var(--text);font-size:14px;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:rgba(91,91,214,.16)}
+
+  header{
+    position:sticky;top:0;z-index:60;
+    background:rgba(245,246,250,.9);backdrop-filter:blur(14px);
+    border-bottom:1px solid var(--line);
+  }
+  .hd{max-width:880px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:10px;min-width:0}
+  .logo{
+    width:34px;height:34px;border-radius:10px;flex:0 0 auto;
+    background:linear-gradient(135deg,#5b5bd6,#8b5cf6);
+    display:grid;place-items:center;color:#fff;font-size:16px;
+    box-shadow:0 6px 16px rgba(91,91,214,.3);
+  }
+  .brand h1{margin:0;font-size:15px;font-weight:700;white-space:nowrap}
+  .brand p{margin:2px 0 0;font-size:11.5px;color:var(--muted)}
+  .seg{display:inline-flex;background:#eceef6;padding:3px;border-radius:10px;gap:2px}
+  .seg button{
+    border:0;background:transparent;padding:7px 13px;border-radius:8px;
+    font-size:12.5px;color:var(--muted);cursor:pointer;font-weight:600;font-family:inherit;
+    transition:.16s;white-space:nowrap;
+  }
+  .seg button.active{background:#fff;color:#23263a;box-shadow:0 1px 4px rgba(20,20,50,.14)}
+
+  .wrap{max-width:880px;margin:0 auto;padding:20px 20px 70px}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
+  .ipanel{padding:20px}
+
+  .field{margin-bottom:14px}
+  .field > label{display:block;font-size:11.5px;font-weight:700;color:#5a6079;margin-bottom:6px;letter-spacing:.03em}
+  .req{color:var(--danger);margin-left:2px}
+  .hint{font-weight:400;color:#a0a4b8;font-size:11px;margin-left:5px;letter-spacing:0}
+  input,textarea{
+    width:100%;border:1px solid var(--line);background:#fbfbfe;border-radius:10px;
+    padding:10px 12px;font-size:13.5px;color:var(--text);font-family:inherit;
+    transition:.16s;outline:none;
+  }
+  textarea{resize:vertical;line-height:1.6}
+  input:focus,textarea:focus{border-color:var(--brand);background:#fff;box-shadow:0 0 0 3px rgba(91,91,214,.11)}
+  input::placeholder,textarea::placeholder{color:#b3b7c8}
+
+  .opts{display:flex;flex-wrap:wrap;gap:18px;margin:16px 0 18px;padding-top:16px;border-top:1px dashed var(--line)}
+  .opt{display:flex;align-items:center;gap:8px}
+  .opt > span{font-size:11.5px;font-weight:700;color:#5a6079;white-space:nowrap}
+  .chips{display:flex;gap:5px}
+  .chip{
+    border:1px solid var(--line);background:#fbfbfe;border-radius:8px;
+    padding:6px 11px;font-size:12.3px;color:#5a5f78;cursor:pointer;user-select:none;
+    transition:.16s;font-family:inherit;line-height:1.2;white-space:nowrap;
+  }
+  .chip:hover{border-color:#c9cbe0}
+  .chip.on{background:linear-gradient(135deg,var(--brand),var(--brand2));border-color:transparent;color:#fff;box-shadow:0 3px 10px rgba(91,91,214,.26)}
+  select{
+    border:1px solid var(--line);background:#fbfbfe;border-radius:8px;padding:6px 26px 6px 10px;
+    font-size:12.3px;color:#5a5f78;font-family:inherit;cursor:pointer;outline:none;
+    appearance:none;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2 4.5L6 8.5L10 4.5' fill='none' stroke='%237b7f95' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+    background-repeat:no-repeat;background-position:right 8px center;
+  }
+  select:focus{border-color:var(--brand)}
+
+  .btn-main{
+    width:100%;border:0;border-radius:11px;padding:12px;font-size:14px;font-weight:700;
+    color:#fff;background:linear-gradient(135deg,#5b5bd6,#8b5cf6);cursor:pointer;
+    box-shadow:0 7px 20px rgba(91,91,214,.28);transition:.18s;font-family:inherit;
+    display:flex;align-items:center;justify-content:center;gap:8px;
+  }
+  .btn-main:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 10px 26px rgba(91,91,214,.36)}
+  .btn-main:disabled{opacity:.62;cursor:not-allowed;box-shadow:none}
+  .btn-main .kbd{font-size:11px;font-weight:500;opacity:.7;border:1px solid rgba(255,255,255,.4);border-radius:5px;padding:1px 5px}
+
+  /* API */
+  .api-box{margin-top:16px;padding-top:16px;border-top:1px dashed var(--line);display:none}
+  .api-box.show{display:block}
+  .api-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .api-head span{font-size:11.5px;font-weight:700;color:#5a6079;letter-spacing:.03em}
+  .api-head i{font-style:normal;font-size:11.5px;color:#8b8fa6}
+  .api-note{font-size:11.5px;line-height:1.65;color:var(--muted);background:#f7f8fc;border:1px solid #edeef6;border-radius:9px;padding:9px 11px;margin-bottom:12px}
+  .api-note b{color:#4a4f68}
+  .api-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:12px}
+  @media (max-width:640px){.api-grid{grid-template-columns:1fr}}
+  .key-wrap{position:relative}
+  .key-wrap input{padding-right:50px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px}
+  .eye{position:absolute;right:5px;top:50%;transform:translateY(-50%);border:0;background:none;cursor:pointer;font-size:11.5px;color:var(--muted);padding:4px 6px;font-family:inherit}
+  .test-row{display:flex;align-items:center;gap:10px;margin-top:10px}
+  .btn-ghost{
+    border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 12px;
+    font-size:12.3px;font-weight:600;color:#4a4f68;cursor:pointer;transition:.16s;font-family:inherit;white-space:nowrap;
+  }
+  .btn-ghost:hover{border-color:var(--brand);color:var(--brand)}
+  .btn-ghost:disabled{opacity:.55;cursor:not-allowed}
+  .test-msg{font-size:11.8px;line-height:1.4;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+  .test-msg.ok{color:var(--ok)}
+  .test-msg.err{color:var(--danger)}
+
+  /* 结果 */
+  .opanel{margin-top:18px;overflow:hidden}
+  .ohead{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:13px 20px;border-bottom:1px solid var(--line);flex-wrap:wrap;
+  }
+  .ohead .l{display:flex;align-items:center;gap:8px}
+  .ohead b{font-size:13.5px}
+  .badge{font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:#eef0fa;color:#5b5bd6}
+  .badge.cloud{background:linear-gradient(135deg,rgba(91,91,214,.12),rgba(139,92,246,.14));color:#6d4bd8}
+  .oacts{display:flex;gap:7px;flex-wrap:wrap}
+  .obody{padding:18px 20px}
+
+  .rev{
+    position:relative;border:1px solid var(--line);border-radius:12px;
+    padding:14px 16px 12px 16px;margin-bottom:10px;background:#fff;transition:.16s;
+  }
+  .rev:hover{border-color:#d6d8e8;box-shadow:0 5px 16px rgba(20,20,50,.05)}
+  .rev-top{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .rev-idx{
+    width:20px;height:20px;border-radius:6px;flex:0 0 auto;
+    background:#eef0fa;color:#5b5bd6;font-size:11px;font-weight:700;
+    display:grid;place-items:center;
+  }
+  .rev-len{font-size:10.5px;color:#a0a4b8;font-weight:500}
+  .rev-copy{
+    margin-left:auto;border:1px solid var(--line);background:#fff;border-radius:6px;
+    padding:3px 8px;font-size:11px;color:var(--muted);cursor:pointer;font-family:inherit;transition:.15s;white-space:nowrap;
+  }
+  .rev-copy:hover{border-color:var(--brand);color:var(--brand)}
+  .rev-text{font-size:14.5px;line-height:1.95;color:#2a2d3f;white-space:pre-wrap;word-break:break-word}
+
+  .empty{padding:54px 24px;text-align:center}
+  .empty h3{margin:0 0 8px;font-size:14.5px;font-weight:700}
+  .empty p{margin:0 auto;font-size:13px;color:var(--muted);line-height:1.8;max-width:400px}
+  .empty .demo{margin-top:18px}
+
+  .loading{padding:56px 24px;text-align:center}
+  .dots{display:flex;gap:6px;justify-content:center;margin-bottom:14px}
+  .dots i{width:8px;height:8px;border-radius:50%;background:var(--brand);animation:bnc 1.3s infinite ease-in-out}
+  .dots i:nth-child(2){animation-delay:.16s}
+  .dots i:nth-child(3){animation-delay:.32s}
+  @keyframes bnc{0%,80%,100%{transform:translateY(0);opacity:.35}40%{transform:translateY(-7px);opacity:1}}
+  .loading p{margin:0;font-size:12.8px;color:var(--muted)}
+
+  .err-box{padding:22px;border-radius:12px;background:#fff5f5;border:1px solid #ffd9d9}
+  .err-box b{display:block;font-size:13.5px;color:#c22c2c;margin-bottom:8px}
+  .err-box p{margin:0;font-size:13px;line-height:1.75;color:#8a4444;white-space:pre-wrap;word-break:break-word}
+
+  #toast{
+    position:fixed;left:50%;bottom:32px;transform:translate(-50%,16px);
+    background:#1f2233;color:#fff;border-radius:9px;padding:9px 17px;font-size:13px;
+    opacity:0;pointer-events:none;transition:.24s;z-index:200;box-shadow:0 10px 30px rgba(0,0,0,.2);
+  }
+  #toast.show{opacity:1;transform:translate(-50%,0)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hd">
+    <div class="brand">
+      <div class="logo">✦</div>
+      <div>
+        <h1>商品评价文案生成器</h1>
+        <p>给它标题和关键词，产出像真人写的买家评价</p>
+      </div>
+    </div>
+    <div class="seg" id="modeSwitch">
+      <button data-mode="local" class="active">本地引擎</button>
+      <button data-mode="deepseek">DeepSeek</button>
+      <button data-mode="siliconflow">硅基流动</button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section class="panel ipanel">
+    <div class="field">
+      <label>商品标题 <span class="req">*</span></label>
+      <textarea id="fTitle" rows="2" placeholder="例如：纯棉短袖T恤男夏季新款宽松透气圆领打底衫"></textarea>
+    </div>
+
+    <div class="field" style="margin-bottom:0">
+      <label>商品关键词 <span class="hint">选填，逗号分隔；不填就写通用维度</span></label>
+      <input id="fKw" placeholder="纯棉, 透气, 不缩水, 版型宽松">
+    </div>
+
+    <div class="opts">
+      <div class="opt">
+        <span>字数</span>
+        <div class="chips" id="lenChips">
+          <button class="chip" data-len="30">30 字</button>
+          <button class="chip on" data-len="45">45 字</button>
+          <button class="chip" data-len="50">50 字</button>
+        </div>
+      </div>
+      <div class="opt">
+        <span>语气</span>
+        <select id="fTone">
+          <option value="plain">真实朴素</option>
+          <option value="warm">热情推荐</option>
+          <option value="detail">走心细致</option>
+          <option value="cool">简洁冷淡</option>
+        </select>
+      </div>
+    </div>
+
+    <button class="btn-main" id="btnGen">
+      <span id="btnText">生成 4 条评价</span>
+      <span class="kbd">Ctrl ↵</span>
+    </button>
+
+    <div class="api-box" id="apiBox">
+      <div class="api-head">
+        <span>API 配置</span>
+        <i id="apiHost"></i>
+      </div>
+      <div class="api-note">Key 只存在这台设备的浏览器里，页面直接请求官方接口，不经过任何第三方服务器。</div>
+      <div class="api-grid">
+        <div class="field" style="margin:0">
+          <label>API Key <span class="req">*</span></label>
+          <div class="key-wrap">
+            <input id="fKey" type="password" placeholder="sk-..." autocomplete="off" spellcheck="false">
+            <button class="eye" id="btnEye" type="button">显示</button>
+          </div>
+        </div>
+        <div class="field" style="margin:0">
+          <label>模型</label>
+          <input id="fModel" placeholder="模型名" spellcheck="false">
+        </div>
+      </div>
+      <div class="test-row">
+        <button class="btn-ghost" id="btnTest" type="button">测试连接</button>
+        <span class="test-msg" id="testMsg"></span>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel opanel">
+    <div class="ohead">
+      <div class="l">
+        <b>评价</b>
+        <span class="badge" id="modeBadge">本地引擎</span>
+        <span class="rev-len" id="countLabel"></span>
+      </div>
+      <div class="oacts">
+        <button class="btn-ghost" id="btnCopyAll">复制全部</button>
+        <button class="btn-ghost" id="btnExport">导出 txt</button>
+        <button class="btn-ghost" id="btnAgain">换一批</button>
+      </div>
+    </div>
+    <div class="obody" id="outBody">
+      <div class="empty">
+        <h3>填个商品标题就能开始</h3>
+        <p>本地引擎把关键词拆进评价句式重新组合，按你选的字数档控制篇幅，夹一点无伤大雅的小瑕疵，读起来更像真人写的。每次出 4 条，换一批不会重样。</p>
+        <div class="demo"><button class="btn-ghost" id="btnDemo">用示例试一下</button></div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ================= 工具 ================= */
+const $ = (s) => document.querySelector(s);
+const $$ = (s) => Array.from(document.querySelectorAll(s));
+
+const pick = (a) => a[Math.floor(Math.random() * a.length)];
+const shuffle = (a) => {
+  const r = a.slice();
+  for (let i = r.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [r[i], r[j]] = [r[j], r[i]];
+  }
+  return r;
+};
+function splitKw(raw) {
+  return String(raw || '').split(/[\n,，;；、|]+/).map((s) => s.trim()).filter(Boolean);
+}
+/** 带去重的取词器：同一批评价里尽量不重复用同一个槽位词 */
+function takeFrom(list, used) {
+  const avail = list.filter((x) => !used.has(x));
+  const v = avail.length ? pick(avail) : pick(list);
+  used.add(v);
+  return v;
+}
+
+/* ================= 本地语料 ================= */
+const MOTIVE = [
+  '看了很久才下单', '第二次回购了', '朋友推荐来的', '凑单顺手买的',
+  '对比了好几家才选这个', '赶上活动就买了', '犹豫了几天还是买了',
+  '给家里人买的', '一直想买这个'
+];
+
+const DETAIL = [
+  '做工比想象中细致，边角处理得干净',
+  '摸着不廉价，有点分量',
+  '和图片基本没色差',
+  '细节做得比同价位的好',
+  '分量足，不轻飘',
+  '拿在手里比看着舒服',
+  '走线整齐，没什么线头',
+  '打开就能用，不用折腾'
+];
+
+const FLAW = [
+  '包装有点简陋',
+  '物流慢了两天',
+  '颜色比图片深一点',
+  '刚拆开有点味道，放两天就好了',
+  '说明书太简单',
+  '客服回复有点慢',
+  '外箱被压了个角，里面没事'
+];
+
+const ENDS = {
+  plain: ['会回购', '推荐', '总体满意', '值这个价', '下次还来', '可以买', '没踩雷', '物有所值', '不后悔', '挺值的'],
+  warm: ['强烈推荐', '会一直回购', '闭眼入不亏', '已经安利给朋友了', '真的可以冲', '下次还来这家', '买它不亏'],
+  detail: ['会继续回购', '值得买', '有需要还会来', '总体是满意的', '挑不出大毛病'],
+  cool: ['就这样', '没什么问题', '还行吧', '可以了', '就这样吧']
+};
+
+const EMO = {
+  plain: ['还行', '挺好', '不错', '挺满意', '可以', '没失望'],
+  warm: ['真的很不错', '超出预期', '有点惊喜', '爱了', '没得说'],
+  detail: ['整体挺满意', '比我预期的要好', '细节上能看出来用心'],
+  cool: ['还行', '可以', '正常发挥']
+};
+
+const TIMES = ['两天', '一周', '半个月', '一个月', '小半个月'];
+const SCENES = ['平时', '日常', '买回来', '放在家里', '上班时候'];
+
+const GENERIC_POINTS = [
+  '质量', '做工', '价格', '包装', '外观', '手感', '实用性', '性价比'
+];
+
+/* 关键词统一产出裸短语，评价语气全部交给句式承担，避免后缀叠加成病句 */
+function kwPhrase(k) {
+  return k;
+}
+
+/* 骨架按目标字数分池：{p}=卖点 {d}{d2}=细节 {f}=小瑕疵 {e}=评价词 {n}=结尾 {t}=时间 {s}=场景 {m}=动机 */
+const SKEL = {
+  30: [
+    '{m}，{p}，{d}。{n}。',
+    '收到用了{t}，{p}，{d}。{n}。',
+    '{m}。{p}，{d}，{n}。',
+    '对比了几家才下单，{p}，{d}。{n}。',
+    '{p}是真的，{d}。{n}。',
+    '{e}，{p}，{d}。{n}。',
+    '{m}，{p}。{d}，{n}。'
+  ],
+  45: [
+    '{m}，{p}，{d}。{s}用下来没什么毛病，{n}。',
+    '收到先检查了一遍，{d}。{p}，{d2}，{n}。',
+    '{m}。用了{t}，{p}，{d}。{f}，不影响使用。',
+    '对比了几家才下单，{p}，{d}。{d2}。{n}。',
+    '{e}。{p}，{d}。{f}，算小问题，{n}。',
+    '{m}，挑了半天才决定。{p}，{d}，{n}。',
+    '{s}用了{t}，{p}，{d}，{d2}。{n}。'
+  ],
+  50: [
+    '{m}，挑了半天才决定。{p}，{d}。{f}，不影响用，{n}。',
+    '{p}是真的，{d}。之前买过别家的，{d2}。{f}，{n}。',
+    '{m}。用了{t}，{p}，{d}，{d2}。{f}，其他都好，{n}。',
+    '说下真实感受：{p}，{d}。之前买过别家的，{d2}。{f}，这个价位能接受，{n}。',
+    '{m}，本来没抱太大期望。{p}，{d}。再用几天，{d2}。{f}，{n}。'
+  ]
+};
+
+/* 各档可接受的成稿字数区间 */
+const CHAR_RANGE = { 30: [24, 38], 45: [36, 53], 50: [44, 63] };
+
+/* ================= 生成 ================= */
+function buildPoint(kws, used) {
+  const k = takeFrom(kws.length ? kws : GENERIC_POINTS, used.kw);
+  return kwPhrase(k);
+}
+
+function buildDetail(used, second) {
+  if (second) {
+    const alt = [
+      '接缝处做得平整',
+      '颜色比想象中耐看',
+      '配件也不糊弄',
+      '洗过一次也没变形',
+      '细节上没什么可挑的'
+    ];
+    return takeFrom(alt, used.d2);
+  }
+  return takeFrom(DETAIL, used.d);
+}
+
+function fillSkeleton(skel, ctx) {
+  return skel.replace(/\{(\w+)\}/g, (m, key) => {
+    switch (key) {
+      case 'p': return ctx.p;
+      case 'd': return ctx.d;
+      case 'd2': return ctx.d2;
+      case 'f': return ctx.f;
+      case 'e': return pick(EMO[ctx.tone]);
+      case 'n': return ctx.n;
+      case 't': return takeFrom(TIMES, ctx.used.t);
+      case 's': return takeFrom(SCENES, ctx.used.s);
+      case 'm': return takeFrom(MOTIVE, ctx.used.m);
+      default: return '';
+    }
+  });
+}
+
+function pickSkeleton(chars, used) {
+  const pool = SKEL[chars] || SKEL[45];
+  return takeFrom(pool, used.skel);
+}
+
+function makeOne(chars, tone, kws, used) {
+  const ctx = {
+    tone,
+    used,
+    p: buildPoint(kws, used),
+    d: buildDetail(used, false),
+    d2: buildDetail(used, true),
+    f: takeFrom(FLAW, used.f),
+    n: takeFrom(ENDS[tone] || ENDS.plain, used.n)
+  };
+  const skel = pickSkeleton(chars, used);
+  let text = fillSkeleton(skel, ctx);
+  // 清理：句末重复标点、双空格
+  text = text.replace(/。{2,}/g, '。').replace(/，{2,}/g, '，').replace(/\s{2,}/g, ' ').trim();
+  if (!/[。！？…]$/.test(text)) text += '。';
+  return text;
+}
+
+function newUsed() {
+  return {
+    kw: new Set(), d: new Set(), d2: new Set(), f: new Set(),
+    n: new Set(), skel: new Set(), t: new Set(), s: new Set(), m: new Set()
+  };
+}
+
+function cloneUsed(u) {
+  const o = {};
+  for (const k in u) o[k] = new Set(u[k]);
+  return o;
+}
+function mergeUsed(dst, src) {
+  for (const k in src) src[k].forEach((v) => dst[k].add(v));
+}
+
+/**
+ * 按目标字数生成：每条最多试 16 次，取第一条落在区间内的；
+ * 都不在区间内就取偏差最小的。重试使用独立的词库副本，
+ * 避免失败的重试把词库消耗掉、导致成稿重复。
+ */
+function generateLocal(opts) {
+  const used = newUsed();
+  const seen = new Set();
+  const out = [];
+  const range = CHAR_RANGE[opts.chars] || CHAR_RANGE[45];
+  const lo = range[0];
+  const hi = range[1];
+
+  for (let i = 0; i < opts.count; i++) {
+    let best = null;
+    let bestGap = Infinity;
+
+    for (let attempt = 0; attempt < 16; attempt++) {
+      const tmp = cloneUsed(used);
+      const text = makeOne(opts.chars, opts.tone, opts.kws, tmp);
+      if (seen.has(text.slice(0, 10))) continue;
+
+      const n = Array.from(text).length;
+      if (n >= lo && n <= hi) { best = { text, used: tmp }; break; }
+
+      const gap = n < lo ? lo - n : n - hi;
+      if (gap < bestGap) { bestGap = gap; best = { text, used: tmp }; }
+    }
+
+    if (!best) break;
+    seen.add(best.text.slice(0, 10));
+    out.push({ chars: opts.chars, text: best.text });
+    mergeUsed(used, best.used);
+  }
+  return out;
+}
+
+/* ================= 云端 ================= */
+const API_PROVIDERS = {
+  deepseek: { label: 'DeepSeek', baseUrl: 'https://api.deepseek.com', defaultModel: 'deepseek-chat', host: 'api.deepseek.com' },
+  siliconflow: { label: '硅基流动', baseUrl: 'https://api.siliconflow.cn/v1', defaultModel: 'Qwen/Qwen2.5-7B-Instruct', host: 'api.siliconflow.cn' }
+};
+
+const SYS_PROMPT = `你是一个常年网购的普通买家，帮商家写商品评价。你写的评价要像真人随手打的：
+口语化、有具体细节、长短不一，绝不写成广告。
+只输出评价正文，不要任何解释、开场白或总结。`;
+
+function buildPrompt(o) {
+  const lenDesc = '每条严格控制在 ' + (o.chars - 5) + '–' + (o.chars + 6) + ' 字之间，太短或太长都不行';
+  const toneDesc = {
+    plain: '真实朴素，像普通消费者随手写的，不用感叹号堆情绪',
+    warm: '热情推荐，语气积极，但不要浮夸',
+    detail: '走心细致，会描述使用过程和小细节',
+    cool: '简洁冷淡，话少，几乎不夸'
+  }[o.tone];
+
+  return [
+    '商品标题：' + o.title,
+    o.kws.length ? '商品关键词：' + o.kws.join('、') : '商品关键词：无（请围绕做工、质量、包装、物流、性价比这些通用维度写）',
+    '',
+    '请写 ' + o.count + ' 条中文商品评价，要求：',
+    '1. ' + lenDesc + '；',
+    '2. 语气：' + toneDesc + '；',
+    '3. 每条由一个不同买家写的，关注点要分散，不要每条都夸同一件事；',
+    '4. 其中 1–2 条可以提一点无伤大雅的小缺点（包装、物流、色差之类），更像真的；',
+    '5. 不要出现"作为一名消费者""总的来说""五星好评""好评返现"这类字眼，不要用 emoji；',
+    '6. 每条之间空一行，用 1. 2. 3. 编号，编号独占行首。'
+  ].join('\n');
+}
+
+function parseReviews(text) {
+  const cleaned = String(text || '').trim();
+  if (!cleaned) return [];
+  const byNum = cleaned.split(/\n(?=\s*\d+[.、)]\s)/)
+    .map((s) => s.replace(/^\s*\d+[.、)]\s*/, '').trim())
+    .filter(Boolean);
+  if (byNum.length > 1) return byNum;
+  const byBlank = cleaned.split(/\n\s*\n/).map((s) => s.replace(/^\s*\d+[.、)]\s*/, '').trim()).filter(Boolean);
+  return byBlank.length ? byBlank : [cleaned];
+}
+
+async function callUpstream(provider, cfg, path, init) {
+  const meta = API_PROVIDERS[provider];
+  const base = String(cfg.baseUrl || meta.baseUrl).trim().replace(/\/+$/, '');
+  const url = base + path;
+  try {
+    return await fetch(url, init);
+  } catch (e) {
+    throw new Error('连不上 ' + meta.label + '（' + url + '）。可能是网络问题，或浏览器插件拦截了请求。可以先切回「本地引擎」。');
+  }
+}
+
+function humanize(status, text, label) {
+  let detail = '';
+  try {
+    const j = JSON.parse(text);
+    detail = (j.error && (j.error.message || j.error)) || j.message || '';
+    if (typeof detail === 'object') detail = JSON.stringify(detail);
+  } catch (_) { detail = String(text || '').slice(0, 160); }
+  if (status === 401) return 'API Key 无效或已过期（' + label + '）';
+  if (status === 402 || status === 403) return '余额不足或权限不够（' + label + '）' + (detail ? '：' + detail : '');
+  if (status === 429) return '请求太频繁或额度用尽（' + label + '），稍后再试';
+  if (status === 404) return '模型名或接口地址不存在（' + label + '）' + (detail ? '：' + detail : '');
+  if (status >= 500) return label + ' 服务异常（HTTP ' + status + '）' + (detail ? '：' + detail : '');
+  return label + ' 返回 HTTP ' + status + (detail ? '：' + detail : '');
+}
+
+async function generateRemote(o, provider) {
+  const meta = API_PROVIDERS[provider];
+  const cfg = state.config[provider];
+  if (!cfg.key) throw new Error('还没填 ' + meta.label + ' 的 API Key。');
+
+  const res = await callUpstream(provider, cfg, '/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + cfg.key },
+    body: JSON.stringify({
+      model: cfg.model || meta.defaultModel,
+      messages: [
+        { role: 'system', content: SYS_PROMPT },
+        { role: 'user', content: buildPrompt(o) }
+      ],
+      temperature: 0.95,
+      max_tokens: 2400,
+      stream: false
+    })
+  });
+
+  const raw = await res.text();
+  if (!res.ok) throw new Error(humanize(res.status, raw, meta.label));
+
+  let data;
+  try { data = JSON.parse(raw); }
+  catch (_) { throw new Error('接口返回的不是 JSON，可能被网关拦了'); }
+
+  const choice = (data.choices && data.choices[0]) || {};
+  const content = (choice.message && choice.message.content) || '';
+  if (!content.trim()) throw new Error('模型返回了空内容，换个说法再试一次。');
+
+  const list = parseReviews(content);
+  if (!list.length) throw new Error('没能解析出评价，请重试。');
+  return list.slice(0, o.count).map((t) => ({ chars: o.chars, text: t }));
+}
+
+/* ================= 状态 ================= */
+const STORE = 'review_gen_v1';
+const state = {
+  mode: 'local',
+  config: {
+    deepseek: { key: '', model: 'deepseek-chat', baseUrl: '' },
+    siliconflow: { key: '', model: 'Qwen/Qwen2.5-7B-Instruct', baseUrl: '' }
+  },
+  reviews: [],
+  opts: { chars: 45, tone: 'plain', count: 4 },
+  busy: false
+};
+
+function loadCfg() {
+  try {
+    const s = JSON.parse(localStorage.getItem(STORE) || 'null');
+    if (!s) return;
+    if (s.mode && (s.mode === 'local' || API_PROVIDERS[s.mode])) state.mode = s.mode;
+    if (s.config) ['deepseek', 'siliconflow'].forEach((k) => {
+      if (s.config[k]) Object.assign(state.config[k], s.config[k]);
+    });
+  } catch (_) {}
+}
+function saveCfg() {
+  try {
+    localStorage.setItem(STORE, JSON.stringify({ mode: state.mode, config: state.config }));
+  } catch (_) {}
+}
+
+/* ================= UI ================= */
+let toastTimer;
+function toast(msg) {
+  const el = $('#toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+function syncMode() {
+  $$('#modeSwitch button').forEach((b) => b.classList.toggle('active', b.dataset.mode === state.mode));
+  const cloud = state.mode !== 'local';
+  $('#apiBox').classList.toggle('show', cloud);
+  $('#modeBadge').textContent = cloud ? API_PROVIDERS[state.mode].label : '本地引擎';
+  $('#modeBadge').classList.toggle('cloud', cloud);
+
+  if (cloud) {
+    const cfg = state.config[state.mode];
+    const meta = API_PROVIDERS[state.mode];
+    $('#fKey').value = cfg.key;
+    $('#fModel').value = cfg.model;
+    $('#fModel').placeholder = meta.defaultModel;
+    $('#apiHost').textContent = meta.host;
+    $('#testMsg').textContent = '';
+    $('#testMsg').className = 'test-msg';
+  }
+  saveCfg();
+}
+
+function readOpts() {
+  return {
+    title: $('#fTitle').value.trim(),
+    kws: splitKw($('#fKw').value),
+    chars: state.opts.chars,
+    tone: state.opts.tone,
+    count: state.opts.count
+  };
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+
+
+function render() {
+  const body = $('#outBody');
+  $('#countLabel').textContent = state.reviews.length ? '共 ' + state.reviews.length + ' 条' : '';
+
+  if (!state.reviews.length) return;
+
+  body.innerHTML = state.reviews.map((r, i) => {
+    const chars = Array.from(r.text).length;
+    return '<div class="rev">' +
+      '<div class="rev-top">' +
+        '<span class="rev-idx">' + (i + 1) + '</span>' +
+        '<span class="rev-len">' + chars + ' 字</span>' +
+        '<button class="rev-copy" data-i="' + i + '">复制</button>' +
+      '</div>' +
+      '<div class="rev-text">' + escapeHtml(r.text) + '</div>' +
+    '</div>';
+  }).join('');
+
+  body.querySelectorAll('.rev-copy').forEach((btn) => {
+    btn.addEventListener('click', () => copy(state.reviews[Number(btn.dataset.i)].text, btn));
+  });
+}
+
+function copy(text, btn) {
+  const done = () => {
+    if (!btn) { toast('已复制'); return; }
+    const old = btn.textContent;
+    btn.textContent = '已复制';
+    btn.style.color = '#12b76a';
+    btn.style.borderColor = '#12b76a';
+    setTimeout(() => {
+      btn.textContent = old;
+      btn.style.color = '';
+      btn.style.borderColor = '';
+    }, 1300);
+  };
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
+  } else {
+    fallbackCopy(text, done);
+  }
+}
+function fallbackCopy(text, done) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.cssText = 'position:fixed;left:-9999px';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); done(); } catch (_) { toast('复制失败，请手动选择'); }
+  document.body.removeChild(ta);
+}
+
+function showLoading() {
+  $('#outBody').innerHTML = '<div class="loading"><div class="dots"><i></i><i></i><i></i></div><p>' +
+    (state.mode === 'local' ? '正在组织评价句式…' : '正在请求 ' + API_PROVIDERS[state.mode].label + ' 生成…') +
+    '</p></div>';
+  $('#countLabel').textContent = '';
+}
+
+function showError(msg) {
+  $('#outBody').innerHTML = '<div class="err-box"><b>生成失败</b><p>' + escapeHtml(msg) + '</p></div>';
+  $('#countLabel').textContent = '';
+}
+
+/* ================= 主流程 ================= */
+async function run() {
+  if (state.busy) return;
+  const o = readOpts();
+
+  if (!o.title) { toast('请先填商品标题'); $('#fTitle').focus(); return; }
+  if (state.mode !== 'local' && !state.config[state.mode].key) {
+    toast('请先填 ' + API_PROVIDERS[state.mode].label + ' 的 API Key');
+    $('#fKey').focus();
+    return;
+  }
+
+  state.busy = true;
+  $('#btnGen').disabled = true;
+  $('#btnText').textContent = '生成中…';
+  showLoading();
+
+  try {
+    let list;
+    if (state.mode === 'local') {
+      await new Promise((r) => setTimeout(r, 260));
+      list = generateLocal(o);
+    } else {
+      list = await generateRemote(o, state.mode);
+    }
+    state.reviews = list;
+    render();
+  } catch (e) {
+    showError(e.message || String(e));
+  } finally {
+    state.busy = false;
+    $('#btnGen').disabled = false;
+    $('#btnText').textContent = '生成 4 条评价';
+  }
+}
+
+/* ================= 事件 ================= */
+function init() {
+  loadCfg();
+  syncMode();
+
+  $$('#modeSwitch button').forEach((b) => b.addEventListener('click', () => {
+    state.mode = b.dataset.mode;
+    syncMode();
+    if (state.mode !== 'local' && !state.config[state.mode].key) toast('请填 ' + API_PROVIDERS[state.mode].label + ' 的 API Key');
+  }));
+
+  $$('#lenChips .chip').forEach((c) => c.addEventListener('click', () => {
+    $$('#lenChips .chip').forEach((x) => x.classList.remove('on'));
+    c.classList.add('on');
+    state.opts.chars = Number(c.dataset.len);
+  }));
+
+  $('#fTone').addEventListener('change', () => { state.opts.tone = $('#fTone').value; });
+
+  ['fKey', 'fModel'].forEach((id) => {
+    $('#' + id).addEventListener('input', () => {
+      if (state.mode === 'local') return;
+      const cfg = state.config[state.mode];
+      if (id === 'fKey') cfg.key = $('#fKey').value.trim();
+      if (id === 'fModel') cfg.model = $('#fModel').value.trim();
+      saveCfg();
+    });
+  });
+
+  $('#btnEye').addEventListener('click', () => {
+    const inp = $('#fKey');
+    const pwd = inp.type === 'password';
+    inp.type = pwd ? 'text' : 'password';
+    $('#btnEye').textContent = pwd ? '隐藏' : '显示';
+  });
+
+  $('#btnTest').addEventListener('click', async () => {
+    if (state.mode === 'local') return;
+    const cfg = state.config[state.mode];
+    const meta = API_PROVIDERS[state.mode];
+    const msg = $('#testMsg');
+    if (!cfg.key) { msg.textContent = '请先填 Key'; msg.className = 'test-msg err'; return; }
+
+    const btn = $('#btnTest');
+    btn.disabled = true;
+    msg.textContent = '连接中…';
+    msg.className = 'test-msg';
+    try {
+      const base = String(cfg.baseUrl || meta.baseUrl).replace(/\/+$/, '');
+      const res = await callUpstream(state.mode, cfg, '/models', {
+        method: 'GET',
+        headers: { Authorization: 'Bearer ' + cfg.key }
+      });
+      const raw = await res.text();
+      if (!res.ok) throw new Error(humanize(res.status, raw, meta.label));
+      const data = JSON.parse(raw);
+      const n = (data.data || []).length;
+      msg.textContent = '连接成功，可用模型 ' + n + ' 个';
+      msg.className = 'test-msg ok';
+    } catch (e) {
+      msg.textContent = String(e.message || e).split('\n')[0];
+      msg.className = 'test-msg err';
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  $('#btnGen').addEventListener('click', run);
+  $('#btnAgain').addEventListener('click', run);
+
+  $('#btnDemo').addEventListener('click', () => {
+    $('#fTitle').value = '纯棉短袖T恤男夏季新款宽松透气圆领打底衫';
+    $('#fKw').value = '纯棉, 透气, 不缩水, 版型宽松, 洗了没变形';
+    run();
+  });
+
+  $('#btnCopyAll').addEventListener('click', () => {
+    if (!state.reviews.length) { toast('还没有评价'); return; }
+    copy(state.reviews.map((r) => r.text).join('\n\n'), null);
+  });
+
+  $('#btnExport').addEventListener('click', () => {
+    if (!state.reviews.length) { toast('还没有评价'); return; }
+    const o = readOpts();
+    const head = '# 商品评价 — ' + o.title + '\n\n生成时间：' + new Date().toLocaleString('zh-CN') + ' ｜ 共 ' + state.reviews.length + ' 条\n\n';
+    const body = state.reviews.map((r, i) => (i + 1) + '. ' + r.text).join('\n\n');
+    const blob = new Blob([head + body], { type: 'text/plain;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = '商品评价-' + o.title.slice(0, 16) + '.txt';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+    toast('已导出 txt');
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); run(); }
+  });
+}
+
+init();
+</script>
+</body>
+</html>
