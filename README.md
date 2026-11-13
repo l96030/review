@@ -1,14 +1,18 @@
 # 商品评价文案生成器
 
-输入**商品标题**和**商品关键词**，生成像真人买家随手写的中文商品评价。
+把商品信息**整段贴进来**（标题、卖点、关键词、一句需求都行），自动识别品类与卖点，生成像真人买家随手写的中文商品评价。
 
 纯静态单文件网页，无框架、无构建、无依赖，可直接部署到 GitHub Pages。
 
 ## 怎么用
 
-1. 填商品标题（必填）；
-2. 填几个关键词，逗号分隔（选填，不填就围绕做工、质量、包装、物流、性价比写）；
-3. 选长度、语气、条数，点生成。
+1. 把商品信息贴进输入框，格式不用讲究。下面这些都行：
+   - `肉包子 皮薄馅大 冷冻装 早上蒸十分钟就能吃`
+   - `纯棉短袖T恤男夏季新款宽松透气圆领打底衫`（整句标题）
+   - `给生鲜水果写评价，重点夸新鲜和发货快`（一句需求）
+2. 选字数、语气，点生成。
+
+系统会自动判断商品品类（食品 / 服饰 / 数码 / 家电 / 美妆 / 家纺 / 家居 / 母婴 / 宠物粮 / 宠物零食 / 通用），并按品类匹配对应的评价语料——食品只说味道口感，服饰只说面料版型，不会出现"包子走线整齐"这种串味评价。结果区会显示识别到的品类。
 
 每次固定生成 **4 条**，可单条复制、复制全部、导出 txt。点「换一批」重新生成，不会重复上一批。
 
@@ -16,7 +20,7 @@
 
 | 模式 | 说明 | 需要配置 |
 | --- | --- | --- |
-| **本地引擎**（默认） | 把关键词拆进评价句式模板重新组合，长短混排、带小瑕疵，离线可用，不消耗 token | 无需任何配置 |
+| **本地引擎**（默认） | 自动识别品类、拆解卖点，按品类语料组合成评价，离线可用，不消耗 token | 无需任何配置 |
 | **DeepSeek** | 直接调用 DeepSeek 官方 Chat API（默认 `deepseek-chat`） | 需要 API Key |
 | **硅基流动** | 直接调用 SiliconFlow Chat API（默认 `Qwen/Qwen2.5-7B-Instruct`） | 需要 API Key |
 
@@ -39,7 +43,11 @@ git remote add origin https://github.com/<你的用户名>/<仓库名>.git
 git push -u origin main
 ```
 
-仓库 **Settings → Pages** → Source 选 `Deploy from a branch` → 分支 `main`、目录 `/(root)` → Save。
+两种部署方式任选其一：
+
+- **分支模式**：Settings → Pages → Source 选 `Deploy from a branch` → 分支 `main`、目录 `/(root)` → Save
+- **Actions 模式**：Settings → Pages → Source 保持 `GitHub Actions`，仓库里已带 `.github/workflows/static.yml`，推送后自动构建
+
 约 1 分钟后访问 `https://<用户名>.github.io/<仓库名>/`。
 
 > `.nojekyll` 用于关闭 Jekyll 处理，请勿删除。
@@ -65,10 +73,11 @@ Key 只写入本机浏览器的 `localStorage`，页面不会把它发往除官�
 
 ```
 .
-├── index.html    # 界面 + 本地评价引擎（单文件，无依赖）
-├── server.js     # 本地预览服务器（部署时可忽略）
-├── .nojekyll     # 关闭 GitHub Pages 的 Jekyll 处理
-├── LICENSE       # MIT
+├── index.html                  # 界面 + 本地评价引擎（单文件，无依赖）
+├── server.js                   # 本地预览服务器（部署时可忽略）
+├── .nojekyll                   # 关闭 GitHub Pages 的 Jekyll 处理
+├── .github/workflows/static.yml # Pages 用 Actions 部署时的构建流程
+├── LICENSE                     # MIT
 └── README.md
 ```
 
