@@ -395,8 +395,8 @@ const MOTIVE = [
 ];
 
 const ENDS = {
-  plain: ['会回购', '推荐', '总体满意', '值这个价', '下次还来', '可以买', '没踩雷', '物有所值', '不后悔', '挺值的'],
-  warm: ['强烈推荐', '会一直回购', '闭眼入不亏', '已经安利给朋友了', '真的可以冲', '下次还来这家', '买它不亏'],
+  plain: ['会再买', '推荐', '总体满意', '值得推荐', '可以买', '没踩雷', '不后悔', '挺值的', '家里人也说好'],
+  warm: ['强烈推荐', '会一直回购', '闭眼入不亏', '已经安利给朋友了', '真的可以冲', '值得推荐', '家里人都说好'],
   detail: ['会继续回购', '值得买', '有需要还会来', '总体是满意的', '挑不出大毛病'],
   cool: ['就这样', '没什么问题', '还行吧', '可以了', '就这样吧']
 };
@@ -414,34 +414,145 @@ const EMO = {
   认不出品类时走 generic，只说体验、不碰任何具体特征。
 */
 const CATS = {
-  food: {
-    label: '食品',
-    points: ['味道比想象中好', '馅料给得实在', '个头比看着大', '新鲜度没问题', '咸淡合适', '分量足', '皮薄馅大', '性价比挺高'],
+  /* 饭类：手抓饭、炒饭、盖饭、粥。能从品名认出主料时，细节会跟着主料走 */
+  food_rice: {
+    label: '饭类',
+    points: ['味道超赞', '肉给得足', '分量十足', '香气足', '米饭粒粒分明', '性价比很高'],
+    detail: [
+      '米粒吸满了汤汁，不干不硬',
+      '香气足，开盖就能闻到',
+      '分量实在，一份能吃饱',
+      '油不大，吃完不腻',
+      '食材新鲜，没有腥味',
+      '配菜给得足，不是只有白饭'
+    ],
+    detail2: ['冷了再热也不影响口感', '辣度刚好，不呛', '咸淡刚好，不用另外配菜', '适合和家人一起吃'],
+    flaw: [
+      '物流慢了两天',
+      '包装有点简陋',
+      '米饭偏软，我喜欢硬一点的',
+      '油稍微大了点',
+      '肉给得不算多',
+      '分量比想的少一点'
+    ],
+    times: ['吃了几天', '吃了两回', '连着吃了两顿', '尝过之后'],
+    /* 品名里认得出主料时，换成更贴合的说法 */
+    detailFn: function (m) {
+      return [
+        m + '炖得软烂，一抿就化',
+        m + '给得实在，能吃到肉块',
+        '米粒吸满了汤汁，不干不硬',
+        '香气足，开盖就能闻到',
+        '分量实在，一份能吃饱',
+        '油不大，吃完不腻'
+      ];
+    }
+  },
+
+  /* 面点：包子、饺子、面条这类 */
+  food_dough: {
+    label: '面点',
+    points: ['皮薄馅大', '馅料给得实在', '个头大', '面皮劲道', '味道正', '性价比很高'],
     detail: [
       '馅料给得实在，咬开能看到肉粒',
       '皮薄，蒸完也没塌',
       '个头比想的大一圈',
-      '味道和楼下现做的差不多',
+      '面皮劲道，不粘牙',
       '加热几分钟就能吃，省事',
-      '不油腻，吃完不觉得齁',
-      '分量足，当早餐刚好',
-      '生产日期很新'
+      '一次一袋，不浪费'
     ],
-    detail2: [
-      '冷了就再热一下，口感没差多少',
-      '配料表挺干净',
-      '一袋正好分两顿',
-      '蒸的时候不粘笼布'
-    ],
+    detail2: ['冷了再热也不影响口感', '蒸的时候不粘笼布', '配料表挺干净'],
     flaw: [
       '物流慢了两天',
-      '外箱被压了个角，里面没事',
-      '有几个形状不太好看',
-      '保质期不长，得赶紧吃完',
       '包装有点简陋',
+      '有几个蒸裂了',
+      '皮稍微厚了点',
+      '馅比想的少一点',
       '个头大小不太均匀'
     ],
     times: ['吃了几天', '吃了两回', '吃了半袋', '尝过之后']
+  },
+
+  /* 熟食菜肴：卤味、烤鸭、小龙虾、火锅 */
+  food_dish: {
+    label: '熟食',
+    points: ['味道超赞', '肉给得足', '分量十足', '香气足', '不腻', '性价比很高'],
+    detail: [
+      '肉炖得软烂，一抿就化',
+      '香气足，开盖就能闻到',
+      '分量实在，一份够两人吃',
+      '不油，吃完不腻',
+      '没有腥味，处理得干净',
+      '加热几分钟就能吃，省事'
+    ],
+    detail2: ['汤汁别扔，拌饭很香', '冷了再热也不影响口感', '配的辣椒油很香'],
+    flaw: [
+      '物流慢了两天',
+      '包装有点简陋',
+      '油稍微大了点',
+      '肉给得不算多',
+      '咸了一点点',
+      '汤汁有点少'
+    ],
+    times: ['吃了几天', '吃了两回', '尝过之后']
+  },
+
+  /* 生鲜水果：看重新鲜度、个头、坏果率 */
+  food_fresh: {
+    label: '生鲜',
+    points: ['很新鲜', '个头大', '甜度高', '水分足', '没坏果', '性价比很高'],
+    detail: [
+      '个头比想的大',
+      '皮薄，水分足',
+      '甜度可以，不酸',
+      '没有坏果，挑得干净',
+      '放几天也没软',
+      '新鲜，蒂还是绿的'
+    ],
+    detail2: ['切开汁水很足', '一箱能吃挺久', '洗洗就能直接吃'],
+    flaw: [
+      '有几个压坏了',
+      '物流慢了两天',
+      '个头大小不太均匀',
+      '熟度偏生，得放两天',
+      '分量比想的少',
+      '甜度一般，没有想象中甜'
+    ],
+    times: ['吃了几天', '吃了半箱', '尝过之后']
+  },
+
+  /* 零食：口感、分量、包装便利性 */
+  food_snack: {
+    label: '零食',
+    points: ['味道好', '分量足', '不腻', '口感脆', '配料干净', '性价比很高'],
+    detail: [
+      '口感脆，不费牙',
+      '不齁甜，吃完不腻',
+      '一袋分量足',
+      '独立小包装，方便带',
+      '配料表干净',
+      '日期很新'
+    ],
+    detail2: ['一包能吃两天', '封口好撕', '不油手'],
+    flaw: ['包装有点简陋', '物流慢了两天', '碎得有点多', '口味偏甜', '分量比想的少', '袋口不太好撕', '日期不够新'],
+    times: ['吃了几天', '吃了两包', '尝过之后']
+  },
+
+  /* 饮品：香气、甜度、冲泡体验 */
+  drink: {
+    label: '饮品',
+    points: ['味道正', '不甜腻', '香气足', '冷泡也好喝', '提神', '性价比很高'],
+    detail: [
+      '香气足，一冲就出来',
+      '不甜腻，喝完不齁',
+      '冷泡也出味',
+      '粉末细，不结块',
+      '一袋能泡一大杯',
+      '日期很新'
+    ],
+    detail2: ['冷热都好喝', '包装密封好', '一条刚好一杯'],
+    flaw: ['包装有点简陋', '物流慢了两天', '偏苦，我口味淡', '独立包装不太好撕', '分量比想的少', '冲开有点结块'],
+    times: ['喝了几天', '喝了一周', '尝过之后']
   },
 
   apparel: {
@@ -619,9 +730,14 @@ const CAT_RULES = [
   ['baby', /(纸尿裤|尿不湿|拉拉裤|奶粉|奶瓶|婴儿|宝宝|婴幼|儿童|童装|玩具|积木|绘本|推车|安全座椅|辅食|湿巾)/],
   ['appliance', /(电饭煲|空气炸锅|微波炉|烤箱|吹风机|电风扇|风扇|加湿器|净化器|吸尘器|剃须刀|电动牙刷|热水壶|电水壶|豆浆机|破壁机|榨汁机|咖啡机|洗衣机|冰箱|取暖器|挂烫机|熨斗|电磁炉|料理机|养生壶|电炖锅|炒锅|平底锅|不粘锅|蒸锅|奶锅|锅)/],
   ['digital', /(手机|耳机|耳麦|音箱|音响|充电宝|充电器|数据线|键盘|鼠标|显示器|电脑|笔记本|平板|相机|摄像头|硬盘|U盘|路由器|蓝牙|手表|手环|投影仪|麦克风|内存卡|转接头|读卡器)/],
-  ['food', /(包子|馒头|饺子|馄饨|汤圆|面包|蛋糕|饼干|糕点|零食|坚果|果干|水果|苹果|橙子|香蕉|芒果|茶叶|咖啡|奶茶|牛奶|酸奶|饮料|果汁|酱油|醋|大米|面粉|面条|米粉|螺蛳粉|方便面|自热|火锅|底料|牛肉|猪肉|鸡肉|鸭肉|鱼|虾|蟹|鸡蛋|粽子|月饼|糖果|巧克力|蜂蜜|麦片|燕麦|速食|卤味|香肠|火腿|丸子|寿司|海苔|豆干|辣条|生鲜|蔬菜|粗粮|杂粮|食用油|调料|速溶|豆奶|椰汁|气泡水|矿泉水|酱)/],
-  ['apparel', /(T恤|恤|衬衫|卫衣|裤|裙|外套|大衣|羽绒服|羽绒|毛衣|针织衫|马甲|西装|内衣|内裤|文胸|袜子|袜|鞋|靴|拖鞋|帽子|帽|围巾|手套|背包|书包|双肩包|手提包|钱包|行李箱|腰带|皮带|睡衣|家居服|泳衣|防晒衣|冲锋衣|牛仔|雪纺|棉服|风衣|夹克)/],
   ['beauty', /(面霜|精华|乳液|水乳|爽肤水|口红|唇釉|面膜|洗面奶|洁面|洗发水|护发素|沐浴露|牙膏|牙刷|香水|粉底|气垫|遮瑕|眼影|睫毛膏|指甲油|身体乳|防晒霜|防晒|卸妆|护肤|化妆品|眼霜|颈霜|磨砂膏|发膜|护手霜|剃须泡)/],
+  ['drink', /(咖啡|茶叶|茶包|红茶|绿茶|乌龙|奶茶|牛奶|酸奶|饮料|果汁|气泡水|矿泉水|豆奶|椰汁|速溶|豆浆)/],
+  ['food_snack', /(零食|饼干|糕点|坚果|果干|糖果|巧克力|辣条|豆干|海苔|薯片|肉脯|蜜饯|麦片|燕麦|面包|蛋糕)/],
+  ['food_rice', /(炒饭|盖饭|煲仔饭|手抓饭|拌饭|饭团|便当|盒饭|捞饭|焖饭|粥|饭)/],
+  ['food_dough', /(包子|馒头|饺子|馄饨|汤圆|面条|挂面|拉面|泡面|方便面|米线|米粉|酸辣粉|螺蛳粉|花卷|烧麦|小笼|生煎|煎饼|手抓饼)/],
+  ['food_dish', /(卤|熟食|烧烤|烤肉|串|烤鸭|烧鸡|小龙虾|海鲜|火锅|底料|自热|预制菜|半成品|速食|香肠|火腿|丸子|寿司|月饼|粽子|羊肉|牛肉|猪肉|鸡肉|鸭肉|鸡腿|排骨|肉夹馍|汉堡|披萨|炸鸡|薯条|肉)/],
+  ['food_fresh', /(水果|苹果|橙子|香蕉|芒果|葡萄|西瓜|草莓|车厘子|生鲜|蔬菜|鸡蛋|大米|面粉|杂粮|粗粮|食用油|调料)/],
+  ['apparel', /(T恤|恤|衬衫|卫衣|裤|裙|外套|大衣|羽绒服|羽绒|毛衣|针织衫|马甲|西装|内衣|内裤|文胸|袜子|袜|鞋|靴|拖鞋|帽子|帽|围巾|手套|背包|书包|双肩包|手提包|钱包|行李箱|腰带|皮带|睡衣|家居服|泳衣|防晒衣|冲锋衣|牛仔|雪纺|棉服|风衣|夹克)/],
   ['textile', /(毛巾|浴巾|床单|被套|被芯|枕套|枕头|抱枕|靠垫|坐垫|窗帘|地毯|桌布|沙发套|毯|床垫|四件套|夏凉被)/],
   ['home', /(收纳|垃圾袋|杯子|水杯|保温杯|餐具|碗|盘|筷子|菜刀|砧板|纸巾|抽纸|卷纸|挂钩|置物架|衣架|台灯|落地灯|插座|雨伞|保鲜盒|密封罐|拖把|扫把|刷子)/]
 ];
@@ -636,6 +752,29 @@ function detectCat(text) {
 
 /* 电商标题里的套话，不能当卖点 */
 const NOISE_RE = /^(包邮|正品|官方|旗舰|新款|热销|爆款|现货|秒发|特价|限时|促销|推荐|好物|自营|直营|旗舰店|赠品|运费险|七天|无理由)/;
+
+/* 品名里的主料，只认肉类，用来把「肉炖得软烂」写成「羊肉炖得软烂」 */
+const MAINS = ['羊肉', '牛肉', '猪肉', '鸡肉', '鸭肉', '排骨', '鸡腿', '牛腩', '肥肠', '羊排', '牛排', '鸡翅'];
+
+function pickMain(raw) {
+  for (var i = 0; i < MAINS.length; i++) {
+    if (String(raw || '').indexOf(MAINS[i]) > -1) return MAINS[i];
+  }
+  return '';
+}
+
+/* 从输入里认出商品名：整段短文本，或者分词后第一个像商品名的片段 */
+function pickName(raw, parts, catKey) {
+  if (!raw) return '';
+  if (raw.length <= 12 && !/[\s\n\r,，、;；|]/.test(raw)) return raw;
+
+  const rule = CAT_RULES.find(function (r) { return r[0] === catKey; });
+  if (rule) {
+    const hit = parts.find(function (x) { return x.length <= 12 && rule[1].test(x); });
+    if (hit) return hit;
+  }
+  return '';
+}
 
 /* 把用户贴进来的一段文字拆成「品类 + 卖点候选」 */
 function parseInput(text) {
@@ -656,6 +795,7 @@ function parseInput(text) {
   let kws = parts.filter(function (x) {
     if (x.length < 2 || x.length > 14) return false;          // 太短没信息，太长是整句描述
     if (x === raw) return false;                              // 整段就是商品名，不算卖点
+    if (/^[0-9A-Za-z.]+$/.test(x)) return false;               // 3J、500g、XL 这类规格不是卖点
     if (NOISE_RE.test(x)) return false;
     if (REQ_RE.test(x)) return false;
     if (rule && x.length <= 8 && rule[1].test(x)) return false; // 「肉包子」这类商品名不当卖点
@@ -665,7 +805,13 @@ function parseInput(text) {
   kws = Array.from(new Set(kws));
   if (!kws.length) kws = cat.points.slice();   // 没抽到就围绕该品类的常见卖点写
 
-  return { cat: cat, catKey: catKey, kws: kws };
+  return {
+    cat: cat,
+    catKey: catKey,
+    kws: kws,
+    name: pickName(raw, parts, catKey),
+    main: pickMain(raw)
+  };
 }
 
 /*
@@ -681,7 +827,8 @@ const SKEL = {
     '对比了几家才下单，{p}，{d}。{n}。',
     '{p}是真的，{d}。{n}。',
     '{e}，{p}，{d}。{n}。',
-    '{m}，{p}。{d}，{n}。'
+    '{m}，{p}。{d}，{n}。',
+    '{name}，{p}，{d}。{n}。'
   ],
   45: [
     '{m}，{p}，{d}。没什么可挑，{n}。',
@@ -690,14 +837,16 @@ const SKEL = {
     '对比了几家才下单，{p}，{d}。{d2}。{n}。',
     '{e}。{p}，{d}。{f}，算小问题，{n}。',
     '{m}。{p}，{d}，{n}。',
-    '{p}，{d}，{d2}。{n}。'
+    '{p}，{d}，{d2}。{n}。',
+    '{name}，{p}，{d}。{d2}，{n}。'
   ],
   50: [
     '{m}。{p}，{d}。{f}，不影响整体，{n}。',
     '{p}是真的，{d}。之前买过别家的，{d2}。{f}，{n}。',
     '{m}。{p}，{d}，{d2}。{f}，其他都好，{n}。',
     '说下真实感受：{p}，{d}。之前买过别家的，{d2}。{f}，这个价位能接受，{n}。',
-    '{m}，本来没抱太大期望。{p}，{d}。{t}，{d2}。{f}，{n}。'
+    '{m}，本来没抱太大期望。{p}，{d}。{t}，{d2}。{f}，{n}。',
+    '{name}，{p}，{d}。{f}，不过不影响，{n}。'
   ]
 };
 
@@ -706,6 +855,13 @@ const CHAR_RANGE = { 30: [24, 38], 45: [36, 53], 50: [44, 63] };
 
 /* ================= 生成 ================= */
 function buildPoint(kws, used, cat) {
+  // 先把用户给的卖点用完，用完再补该品类的常见卖点，避免同一条卖点重复出现
+  const rest = kws.filter(function (k) { return !used.kw.has(k); });
+  if (rest.length) return takeFrom(rest, used.kw);
+
+  const fromCat = cat.points.filter(function (k) { return !used.kw.has(k); });
+  if (fromCat.length) return takeFrom(fromCat, used.kw);
+
   return takeFrom(kws.length ? kws : cat.points, used.kw);
 }
 
@@ -719,20 +875,23 @@ function fillSkeleton(skel, ctx) {
       case 'e': return pick(EMO[ctx.tone]);
       case 'n': return ctx.n;
       case 't': return takeFrom(ctx.cat.times, ctx.used.t);
+      case 'name': return ctx.name || '';
       case 'm': return takeFrom(MOTIVE, ctx.used.m);
       default: return '';
     }
   });
 }
 
-function pickSkeleton(chars, used, skipReal) {
+function pickSkeleton(chars, used, skipReal, hasName) {
   const pool = SKEL[chars] || SKEL[45];
   // 「一袋10只是真的」这种量词短语套不进 "{p}是真的"，换别的句式
-  const list = skipReal ? pool.filter(function (x) { return x.indexOf('{p}是真的') < 0; }) : pool;
+  var list = skipReal ? pool.filter(function (x) { return x.indexOf('{p}是真的') < 0; }) : pool;
+  // 认不出商品名时，不能用「羊肉手抓饭，……」这种开头
+  if (!hasName) list = list.filter(function (x) { return x.indexOf('{name}') < 0; });
   return takeFrom(list.length ? list : pool, used.skel);
 }
 
-function makeOne(chars, tone, kws, used, cat) {
+function makeOne(chars, tone, kws, used, cat, name) {
   const p = buildPoint(kws, used, cat);
   // 细节、第二细节、瑕疵都不能和卖点讲同一件事
   const d = takeAvoid(cat.detail, used.d, [p]);
@@ -742,13 +901,14 @@ function makeOne(chars, tone, kws, used, cat) {
     tone: tone,
     used: used,
     cat: cat,
+    name: name,
     p: p,
     d: d,
     d2: d2,
     f: f,
     n: takeFrom(ENDS[tone] || ENDS.plain, used.n)
   };
-  const skel = pickSkeleton(chars, used, /[0-9]/.test(p));
+  const skel = pickSkeleton(chars, used, /[0-9]/.test(p), !!name);
   let text = fillSkeleton(skel, ctx);
   // 清理：句末重复标点、双空格
   text = text.replace(/。{2,}/g, '。').replace(/，{2,}/g, '，').replace(/\s{2,}/g, ' ').trim();
@@ -779,8 +939,14 @@ function mergeUsed(dst, src) {
  */
 function generateLocal(opts) {
   const parsed = parseInput(opts.text);
-  const cat = parsed.cat;
+  let cat = parsed.cat;
   const kws = parsed.kws;
+  const name = parsed.name;
+
+  // 认出主料就换一套更贴合的细节，例如「羊肉炖得软烂」
+  if (parsed.main && cat.detailFn) {
+    cat = Object.assign({}, cat, { detail: cat.detailFn(parsed.main) });
+  }
   const used = newUsed();
   const seen = new Set();
   const out = [];
@@ -794,7 +960,7 @@ function generateLocal(opts) {
 
     for (let attempt = 0; attempt < 40; attempt++) {
       const tmp = cloneUsed(used);
-      const text = makeOne(opts.chars, opts.tone, kws, tmp, cat);
+      const text = makeOne(opts.chars, opts.tone, kws, tmp, cat, name);
       if (seen.has(text)) continue;
 
       const n = Array.from(text).length;
@@ -807,7 +973,7 @@ function generateLocal(opts) {
     // 词库被消耗完时允许重复，但条数必须够
     if (!best) {
       const tmp = cloneUsed(used);
-      best = { text: makeOne(opts.chars, opts.tone, kws, tmp, cat), used: tmp };
+      best = { text: makeOne(opts.chars, opts.tone, kws, tmp, cat, name), used: tmp };
     }
 
     seen.add(best.text);
@@ -848,10 +1014,11 @@ function buildPrompt(o) {
     '先自己判断这是什么商品、有哪些卖点（不用输出判断过程），再写 ' + o.count + ' 条中文买家评价，要求：',
     '1. ' + lenDesc + '；',
     '2. 语气：' + toneDesc + '；',
-    '3. 每条出自不同买家，关注点要分散，不要每条都夸同一件事；',
-    '4. 其中 1–2 条可以提一点无伤大雅的小缺点（包装、物流、规格之类），更像真的；',
-    '5. 不要出现"作为一名消费者""总的来说""五星好评""好评返现"这类字眼，不要用 emoji；',
-    '6. 每条之间空一行，用 1. 2. 3. 编号，编号独占行首。',
+    '3. 每条出自不同买家，每条只突出一个具体卖点，4 条之间不要重复同一个点；',
+    '4. 重心放在这个商品本身的口感、材质、做工、使用感受上，不要句句都提物流和包装——最多一条提物流或包装；',
+    '5. 其中 1–2 条可以提一点无伤大雅的小缺点，缺点要具体到使用感受（口感、规格、细节），不要只写包装破损；',
+    '6. 不要出现"作为一名消费者""总的来说""五星好评""好评返现"这类字眼，不要用 emoji；',
+    '7. 每条之间空一行，用 1. 2. 3. 编号，编号独占行首。',
     '',
     '【最重要】评价里提到的细节必须是这个商品真实会有的。' +
       (catKey === 'generic'
