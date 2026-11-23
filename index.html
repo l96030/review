@@ -279,7 +279,7 @@
         <span>语气</span>
         <select id="fTone">
           <option value="plain">真实朴素</option>
-          <option value="warm">热情推荐</option>
+          <option value="warm" selected>热情推荐</option>
           <option value="detail">走心细致</option>
           <option value="cool">简洁冷淡</option>
         </select>
@@ -1110,7 +1110,7 @@ const state = {
     siliconflow: { key: '', model: 'Qwen/Qwen2.5-7B-Instruct', baseUrl: '' }
   },
   reviews: [],
-  opts: { chars: 45, tone: 'plain', count: 4 },
+  opts: { chars: 45, tone: 'warm', count: 4 },
   busy: false
 };
 
